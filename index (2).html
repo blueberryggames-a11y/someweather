@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StormTrack — Live Weather Radar</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🌩</text></svg>" />
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav" id="topnav">
+  <div class="nav-left">
+    <button class="hamburger" id="menuToggle" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="brand">
+      <span class="brand-icon">⚡</span>
+      <span class="brand-name">StormTrack</span>
+    </div>
+    <div class="nav-divider"></div>
+    <nav class="nav-pills">
+      <button class="nav-pill active" data-mode="radar" id="pillRadar">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M12 6a6 6 0 0 1 0 12"/></svg>
+        Radar
+      </button>
+      <button class="nav-pill" data-mode="composite" id="pillComposite">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Composite
+      </button>
+      <button class="nav-pill" data-mode="satellite" id="pillSatellite">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+        Satellite
+      </button>
+      <button class="nav-pill" data-mode="models" id="pillModels">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h8"/></svg>
+        Models
+      </button>
+      <button class="nav-pill" data-mode="outlooks" id="pillOutlooks">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Outlooks
+      </button>
+    </nav>
+  </div>
+  <div class="nav-right">
+    <button class="nav-icon-btn" id="searchBtn" title="Search location">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </button>
+    <button class="nav-icon-btn" id="alertsBtn" title="Active alerts">
+      <svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span class="alert-badge" id="alertBadge">0</span>
+    </button>
+    <button class="nav-icon-btn" id="settingsBtn" title="Settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+    </button>
+  </div>
+</nav>
+
+<!-- SEARCH OVERLAY -->
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-box">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="searchInput" placeholder="Search city, zip, or coordinates..." autocomplete="off" />
+    <button id="searchClose">✕</button>
+  </div>
+  <div class="search-results" id="searchResults"></div>
+</div>
+
+<!-- SIDE MENU -->
+<div class="side-menu" id="sideMenu">
+  <div class="side-menu-header">
+    <span>Layers & Tools</span>
+    <button id="sideMenuClose">✕</button>
+  </div>
+  <div class="side-menu-section">
+    <div class="side-menu-label">OVERLAYS</div>
+    <label class="toggle-row">
+      <span class="toggle-icon">📡</span>
+      <span>Radar</span>
+      <div class="toggle-switch">
+        <input type="checkbox" id="toggleRadar" checked />
+        <span class="slider"></span>
+      </div>
+    </label>
+    <label class="toggle-row">
+      <span class="toggle-icon">⚠️</span>
+      <span>NWS Alerts</span>
+      <div class="toggle-switch">
+        <input type="checkbox" id="toggleAlerts" checked />
+        <span class="slider"></span>
+      </div>
+    </label>
+    <label class="toggle-row">
+      <span class="toggle-icon">🌩️</span>
+      <span>Lightning</span>
+      <div class="toggle-switch">
+        <input type="checkbox" id="toggleLightning" />
+        <span class="slider"></span>
+      </div>
+    </label>
+    <label class="toggle-row">
+      <span class="toggle-icon">📹</span>
+      <span>Traffic Cameras</span>
+      <div class="toggle-switch">
+        <input type="checkbox" id="toggleCameras" />
+        <span class="slider"></span>
+      </div>
+    </label>
+    <label class="toggle-row">
+      <span class="toggle-icon">🌡️</span>
+      <span>Surface Fronts</span>
+      <div class="toggle-switch">
+        <input type="checkbox" id="toggleFronts" />
+        <span class="slider"></span>
+      </div>
+    </label>
+    <label class="toggle-row">
+      <span class="toggle-icon">💨</span>
+      <span>Wind Barbs</span>
+      <div class="toggle-switch">
+        <input type="checkbox" id="toggleWind" />
+        <span class="slider"></span>
+      </div>
+    </label>
+  </div>
+  <div class="side-menu-section">
+    <div class="side-menu-label">RADAR PRODUCT</div>
+    <div class="product-grid">
+      <button class="product-btn active" data-product="bref_raw">Base Reflectivity</button>
+      <button class="product-btn" data-product="bvel_raw">Base Velocity</button>
+      <button class="product-btn" data-product="bsrvel_raw">Storm Rel. Vel.</button>
+      <button class="product-btn" data-product="bdsa">Dual-Pol Corr.</button>
+      <button class="product-btn" data-product="bdzdr">Diff. Reflectivity</button>
+      <button class="product-btn" data-product="n0q">Composite Refl.</button>
+    </div>
+  </div>
+  <div class="side-menu-section">
+    <div class="side-menu-label">MAP STYLE</div>
+    <div class="product-grid">
+      <button class="product-btn active map-style-btn" data-style="dark">Dark</button>
+      <button class="product-btn map-style-btn" data-style="satellite">Satellite</button>
+      <button class="product-btn map-style-btn" data-style="light">Light</button>
+      <button class="product-btn map-style-btn" data-style="topo">Topo</button>
+    </div>
+  </div>
+  <div class="side-menu-section">
+    <div class="side-menu-label">TOOLS</div>
+    <button class="tool-btn" id="btnMeasure">📏 Measure Distance</button>
+    <button class="tool-btn" id="btnShareMap">🔗 Share Map</button>
+    <button class="tool-btn" id="btnMyLocation">📍 My Location</button>
+    <button class="tool-btn" id="btnScreenshot">📷 Screenshot</button>
+  </div>
+</div>
+<div class="side-menu-overlay" id="sideMenuOverlay"></div>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- RADAR STATION SELECTOR -->
+<div class="station-selector" id="stationSelector">
+  <div class="station-selector-header">
+    <span>Radar Station</span>
+    <button id="closeStationSelector">✕</button>
+  </div>
+  <input type="text" id="stationSearch" placeholder="Search station..." />
+  <div class="station-list" id="stationList"></div>
+</div>
+
+<!-- BOTTOM CONTROLS -->
+<div class="bottom-bar" id="bottomBar">
+  <div class="bottom-left">
+    <button class="bottom-btn" id="radarSelectBtn" title="Select radar station">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M12 6a6 6 0 0 1 0 12"/></svg>
+      <span id="currentStationLabel">KMKX</span>
+    </button>
+    <div class="bottom-divider"></div>
+    <div class="product-display" id="productDisplay">Base Reflectivity</div>
+  </div>
+  <div class="bottom-center">
+    <div class="timeline-wrap">
+      <button class="tl-btn" id="btnStepBack" title="Step back">‹</button>
+      <div class="timeline" id="timeline">
+        <div class="timeline-track" id="timelineTrack">
+          <div class="timeline-progress" id="timelineProgress"></div>
+          <div class="timeline-thumb" id="timelineThumb"></div>
+        </div>
+        <div class="timeline-times" id="timelineTimes"></div>
+      </div>
+      <button class="tl-btn" id="btnStepFwd" title="Step forward">›</button>
+      <button class="tl-btn play-btn" id="btnPlay" title="Play/Pause">▶</button>
+    </div>
+    <div class="time-display" id="timeDisplay">Loading...</div>
+  </div>
+  <div class="bottom-right">
+    <div class="legend" id="colorLegend">
+      <div class="legend-label">dBZ</div>
+      <div class="legend-bar">
+        <div class="legend-gradient"></div>
+        <div class="legend-ticks">
+          <span>5</span><span>20</span><span>35</span><span>50</span><span>65</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ALERT DETAILS PANEL -->
+<div class="alert-panel" id="alertPanel">
+  <div class="alert-panel-header">
+    <span>⚠️ Active Alerts</span>
+    <button id="closeAlertPanel">✕</button>
+  </div>
+  <div class="alert-list" id="alertList">
+    <div class="loading-alerts">Loading alerts...</div>
+  </div>
+</div>
+
+<!-- CAMERA MODAL -->
+<div class="camera-modal" id="cameraModal">
+  <div class="camera-modal-inner">
+    <div class="camera-modal-header">
+      <span id="cameraTitle">Traffic Camera</span>
+      <button id="closeCameraModal">✕</button>
+    </div>
+    <div class="camera-feed" id="cameraFeed">
+      <img id="cameraImg" src="" alt="Traffic Camera Feed" />
+      <div class="camera-meta" id="cameraMeta"></div>
+    </div>
+    <div class="camera-controls">
+      <button id="refreshCamera">🔄 Refresh</button>
+      <button id="openCameraNewTab">↗ Open Full</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/stations.js"></script>
+<script src="js/cameras.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
